@@ -1,5 +1,9 @@
 import { MMKVInstance } from "react-native-mmkv-storage"
-import { Reactotron } from "reactotron-core-client"
+import type {
+  MutatorFunction,
+  TransactionType,
+} from "react-native-mmkv-storage/dist/src/transactions"
+import type { Reactotron } from "reactotron-core-client"
 
 interface MmkvPluginConfig {
   storage: MMKVInstance
@@ -37,14 +41,18 @@ export default function mmkvPlugin(config: MmkvPluginConfig) {
       onConnect() {
         dataTypes.forEach((type) => {
           // example adapted from https://rnmmkv.vercel.app/#/transactionmanager?id=_1-simple-developer-tooling
-          config.storage.transactions.register(type, "onwrite", (key, value) => {
+          const addListener = (transaction: TransactionType, mutator: MutatorFunction) => {
+            config.storage.transactions.register(type, transaction, mutator)
+          }
+
+          addListener("onwrite", (key, value) => {
             // setItem from async storage https://github.com/infinitered/reactotron/blob/beta/lib/reactotron-react-native/src/plugins/asyncStorage.ts#L34
             if (ignore.indexOf(key) < 0) {
               sendToReactotron("setItem", { key, value })
             }
           })
 
-          config.storage.transactions.register(type, "ondelete", (key) => {
+          addListener("ondelete", (key) => {
             // removeItem from async storage https://github.com/infinitered/reactotron/blob/beta/lib/reactotron-react-native/src/plugins/asyncStorage.ts#L43
             if (ignore.indexOf(key) < 0) {
               sendToReactotron("removeItem", { key })
