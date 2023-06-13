@@ -18,7 +18,7 @@ interface MmkvPluginConfig {
 }
 
 /**
- * Reactotron plugin for adapting MMKV storage to use AsyncStorage.
+ * Reactotron plugin to log MMKV storage changes
  *
  * @example
  * import { MMKVLoader } from "react-native-mmkv-storage"
