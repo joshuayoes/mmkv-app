@@ -35,12 +35,23 @@ export default function mmkvPlugin(config: MmkvPluginConfig) {
   /** MMKV data types */
   const dataTypes = ["string", "number", "object", "array", "boolean"] as const
 
-  /** @see https://rnmmkv.vercel.app/#/transactionmanager?id=_1-simple-developer-tooling */
-  const addListener = (transaction: TransactionType, mutator: MutatorFunction) => {
-    dataTypes.forEach((type) => {
-      config.storage.transactions.register(type, transaction, mutator)
+  /** Clean up function to unregister the listener from MMKV, to prevent memory leaks */
+  type RemoveListenerFn = () => void
+
+  /**
+   * Create a listener that fires a callback for specific transitions on all MMKV data types
+   * @see https://rnmmkv.vercel.app/#/transactionmanager?id=_1-simple-developer-tooling
+   */
+  const addListener = (
+    transaction: TransactionType,
+    mutator: MutatorFunction,
+  ): RemoveListenerFn[] =>
+    dataTypes.map((type) => {
+      const removeListenerFn = config.storage.transactions.register(type, transaction, mutator)
+      return removeListenerFn
     })
-  }
+
+  const removeListeners: RemoveListenerFn[] = []
 
   return (reactotron: Reactotron) => {
     const log = ({ value, preview }: { value: unknown; preview: string }) => {
@@ -53,7 +64,7 @@ export default function mmkvPlugin(config: MmkvPluginConfig) {
 
     return {
       onConnect() {
-        addListener("onwrite", (key, value) => {
+        const onWriteRemoveListeners = addListener("onwrite", (key, value) => {
           const keyIsIgnored = ignore.indexOf(key) !== -1
           if (keyIsIgnored) return
 
@@ -67,7 +78,7 @@ export default function mmkvPlugin(config: MmkvPluginConfig) {
           })
         })
 
-        addListener("ondelete", (key) => {
+        const onDeleteRemoveListeners = addListener("ondelete", (key) => {
           const keyIsIgnored = ignore.indexOf(key) !== -1
           if (keyIsIgnored) return
 
@@ -75,6 +86,13 @@ export default function mmkvPlugin(config: MmkvPluginConfig) {
             value: { key },
             preview: `Deleting "${key}"`,
           })
+        })
+
+        removeListeners.push(...onWriteRemoveListeners, ...onDeleteRemoveListeners)
+      },
+      onDisconnect() {
+        removeListeners.forEach((removeListener) => {
+          removeListener()
         })
       },
     }
