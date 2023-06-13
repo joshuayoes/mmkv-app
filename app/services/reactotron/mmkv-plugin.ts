@@ -32,40 +32,48 @@ interface MmkvPluginConfig {
 export default function mmkvPlugin(config: MmkvPluginConfig) {
   const ignore = config.ignore ?? []
 
+  /** MMKV data types */
+  const dataTypes = ["string", "number", "object", "array", "boolean"] as const
+
+  /** @see https://rnmmkv.vercel.app/#/transactionmanager?id=_1-simple-developer-tooling */
+  const addListener = (transaction: TransactionType, mutator: MutatorFunction) => {
+    dataTypes.forEach((type) => {
+      config.storage.transactions.register(type, transaction, mutator)
+    })
+  }
+
   return (reactotron: Reactotron) => {
-    /** MMKV data types */
-    const dataTypes = ["string", "number", "object", "array", "boolean"] as const
+    const log = ({ value, preview }: { value: unknown; preview: string }) => {
+      reactotron.display({
+        name: "MMKV",
+        value,
+        preview,
+      })
+    }
 
     return {
       onConnect() {
-        dataTypes.forEach((type) => {
-          // logging example adapted from https://rnmmkv.vercel.app/#/transactionmanager?id=_1-simple-developer-tooling
-          const addListener = (transaction: TransactionType, mutator: MutatorFunction) => {
-            config.storage.transactions.register(type, transaction, mutator)
-          }
+        addListener("onwrite", (key, value) => {
+          const keyIsIgnored = ignore.indexOf(key) !== -1
+          if (keyIsIgnored) return
 
-          addListener("onwrite", (key, value) => {
-            if (ignore.indexOf(key) < 0) {
-              const stringValue = JSON.stringify(value)
-              const previewValue =
-                stringValue.length > 50 ? stringValue.slice(0, 50) + "..." : stringValue
+          const stringValue = JSON.stringify(value)
+          const previewValue =
+            stringValue.length > 50 ? stringValue.slice(0, 50) + "..." : stringValue
 
-              reactotron.display({
-                name: "MMKV",
-                value: { key, value },
-                preview: `Set "${key}" to ${previewValue}`,
-              })
-            }
+          log({
+            value: { key, value },
+            preview: `Set "${key}" to ${previewValue}`,
           })
+        })
 
-          addListener("ondelete", (key) => {
-            if (ignore.indexOf(key) < 0) {
-              reactotron.display({
-                name: "MMKV",
-                value: { key },
-                preview: `Deleting "${key}"`,
-              })
-            }
+        addListener("ondelete", (key) => {
+          const keyIsIgnored = ignore.indexOf(key) !== -1
+          if (keyIsIgnored) return
+
+          log({
+            value: { key },
+            preview: `Deleting "${key}"`,
           })
         })
       },
