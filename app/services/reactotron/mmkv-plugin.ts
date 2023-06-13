@@ -33,14 +33,6 @@ export default function mmkvPlugin(config: MmkvPluginConfig) {
   const ignore = config.ignore ?? []
 
   return (reactotron: Reactotron) => {
-    /**
-     * Hijacking example from asyncStorage plugin
-     * @see https://github.com/infinitered/reactotron/blob/beta/lib/reactotron-react-native/src/plugins/asyncStorage.ts#LL27C1-L30C1
-     */
-    const sendToReactotron = (action: string, data?: any) => {
-      reactotron.send("asyncStorage.mutation", { action, data })
-    }
-
     /** MMKV data types */
     const dataTypes = ["string", "number", "object", "array", "boolean"] as const
 
@@ -53,16 +45,26 @@ export default function mmkvPlugin(config: MmkvPluginConfig) {
           }
 
           addListener("onwrite", (key, value) => {
-            // setItem from async storage https://github.com/infinitered/reactotron/blob/beta/lib/reactotron-react-native/src/plugins/asyncStorage.ts#L34
             if (ignore.indexOf(key) < 0) {
-              sendToReactotron("setItem", { key, value })
+              const stringValue = JSON.stringify(value)
+              const previewValue =
+                stringValue.length > 50 ? stringValue.slice(0, 50) + "..." : stringValue
+
+              reactotron.display({
+                name: "MMKV",
+                value: { key, value },
+                preview: `Set "${key}" to ${previewValue}`,
+              })
             }
           })
 
           addListener("ondelete", (key) => {
-            // removeItem from async storage https://github.com/infinitered/reactotron/blob/beta/lib/reactotron-react-native/src/plugins/asyncStorage.ts#L43
             if (ignore.indexOf(key) < 0) {
-              sendToReactotron("removeItem", { key })
+              reactotron.display({
+                name: "MMKV",
+                value: { key },
+                preview: `Deleting "${key}"`,
+              })
             }
           })
         })
