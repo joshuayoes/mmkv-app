@@ -6,7 +6,14 @@ import type {
 import type { Reactotron } from "reactotron-core-client"
 
 interface MmkvPluginConfig {
+  /**
+   * MMKV storage instance
+   * @example
+   * import { MMKVLoader } from "react-native-mmkv-storage"
+   * const storage = new MMKVLoader().initialize()
+   */
   storage: MMKVInstance
+  /** Storage keys you want to ignore */
   ignore?: string[]
 }
 
@@ -27,7 +34,7 @@ export default function mmkvPlugin(config: MmkvPluginConfig) {
 
   return (reactotron: Reactotron) => {
     /**
-     * Hijacking asyncStorage plugin
+     * Hijacking example from asyncStorage plugin
      * @see https://github.com/infinitered/reactotron/blob/beta/lib/reactotron-react-native/src/plugins/asyncStorage.ts#LL27C1-L30C1
      */
     const sendToReactotron = (action: string, data?: any) => {
@@ -40,7 +47,7 @@ export default function mmkvPlugin(config: MmkvPluginConfig) {
     return {
       onConnect() {
         dataTypes.forEach((type) => {
-          // example adapted from https://rnmmkv.vercel.app/#/transactionmanager?id=_1-simple-developer-tooling
+          // logging example adapted from https://rnmmkv.vercel.app/#/transactionmanager?id=_1-simple-developer-tooling
           const addListener = (transaction: TransactionType, mutator: MutatorFunction) => {
             config.storage.transactions.register(type, transaction, mutator)
           }
