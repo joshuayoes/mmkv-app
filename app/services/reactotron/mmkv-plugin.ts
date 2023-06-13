@@ -19,7 +19,10 @@ interface MmkvPluginConfig {
  */
 export default function mmkvPlugin(config: MmkvPluginConfig) {
   return (reactotron: Reactotron) => {
-    /** Hijacking asyncStorage.mutation key */
+    /**
+     * Hijacking asyncStorage plugin
+     * @see https://github.com/infinitered/reactotron/blob/beta/lib/reactotron-react-native/src/plugins/asyncStorage.ts#LL27C1-L30C1
+     */
     const sendToReactotron = (action: string, data?: any) => {
       reactotron.send("asyncStorage.mutation", { action, data })
     }
@@ -30,6 +33,7 @@ export default function mmkvPlugin(config: MmkvPluginConfig) {
     return {
       onConnect() {
         dataTypes.forEach((type) => {
+          // example adapted from https://rnmmkv.vercel.app/#/transactionmanager?id=_1-simple-developer-tooling
           config.storage.transactions.register(type, "onwrite", (key, value) => {
             sendToReactotron(key, value)
           })
