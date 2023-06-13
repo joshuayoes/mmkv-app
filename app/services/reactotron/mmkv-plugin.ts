@@ -3,6 +3,7 @@ import { Reactotron } from "reactotron-core-client"
 
 interface MmkvPluginConfig {
   storage: MMKVInstance
+  ignore?: string[]
 }
 
 /**
@@ -18,6 +19,8 @@ interface MmkvPluginConfig {
  * Reactotron.use(mmkvPlugin({ storage }))
  */
 export default function mmkvPlugin(config: MmkvPluginConfig) {
+  const ignore = config.ignore ?? []
+
   return (reactotron: Reactotron) => {
     /**
      * Hijacking asyncStorage plugin
@@ -35,7 +38,17 @@ export default function mmkvPlugin(config: MmkvPluginConfig) {
         dataTypes.forEach((type) => {
           // example adapted from https://rnmmkv.vercel.app/#/transactionmanager?id=_1-simple-developer-tooling
           config.storage.transactions.register(type, "onwrite", (key, value) => {
-            sendToReactotron(key, value)
+            // setItem from async storage https://github.com/infinitered/reactotron/blob/beta/lib/reactotron-react-native/src/plugins/asyncStorage.ts#L34
+            if (ignore.indexOf(key) < 0) {
+              sendToReactotron("setItem", { key, value })
+            }
+          })
+
+          config.storage.transactions.register(type, "ondelete", (key) => {
+            // removeItem from async storage https://github.com/infinitered/reactotron/blob/beta/lib/reactotron-react-native/src/plugins/asyncStorage.ts#L43
+            if (ignore.indexOf(key) < 0) {
+              sendToReactotron("removeItem", { key })
+            }
           })
         })
       },
