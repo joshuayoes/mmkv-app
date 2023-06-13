@@ -207,6 +207,42 @@ export function setupReactotron(customConfig: ReactotronConfig = {}) {
       },
     })
 
+    Reactotron.onCustomCommand({
+      title: "Get MMKV Value",
+      description: "Gets a value from MMKV",
+      command: "getMMKVValue",
+      args: [
+        {
+          name: "key",
+          type: ArgType.String,
+        },
+      ],
+      handler: (args) => {
+        storage.getItem(args.key, (err, result) => {
+          if (err) {
+            Reactotron.log(`Error getting value for key ${args.key}: ${err}`)
+          } else {
+            Reactotron.log(`Value for key ${args.key}: ${result}`)
+          }
+        })
+      },
+    })
+
+    Reactotron.onCustomCommand({
+      title: "Delete MMKV Value",
+      description: "Deletes a value from MMKV",
+      command: "deleteMMKVValue",
+      args: [
+        {
+          name: "key",
+          type: ArgType.String,
+        },
+      ],
+      handler: (args) => {
+        storage.removeItem(args.key)
+      },
+    })
+
     // clear if we should
     if (config.clearOnLoad) {
       Reactotron.clear()
