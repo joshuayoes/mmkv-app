@@ -23,6 +23,8 @@ import { clear } from "../../utils/storage"
 import { ReactotronConfig, DEFAULT_REACTOTRON_CONFIG } from "./reactotronConfig"
 import { goBack, resetRoot, navigate } from "../../navigators/navigationUtilities"
 import { fakeReactotron } from "./reactotronFake"
+import mmkvPlugin from "./mmkv-plugin"
+import { storage } from "app/utils/storage/mmkv"
 
 /**
  * We tell typescript we intend to hang Reactotron off of the console object.
@@ -122,6 +124,8 @@ export function setupReactotron(customConfig: ReactotronConfig = {}) {
       }),
     )
 
+    Reactotron.use(mmkvPlugin({ storage }))
+
     // connect to the app
     Reactotron.connect()
 
@@ -181,6 +185,25 @@ export function setupReactotron(customConfig: ReactotronConfig = {}) {
       handler: () => {
         Reactotron.log("Going back")
         goBack()
+      },
+    })
+
+    Reactotron.onCustomCommand({
+      title: "Set MMKV Value",
+      description: "Sets a value in MMKV",
+      command: "setMMKVValue",
+      args: [
+        {
+          name: "key",
+          type: ArgType.String,
+        },
+        {
+          name: "value",
+          type: ArgType.String,
+        },
+      ],
+      handler: (args) => {
+        storage.setItem(args.key, args.value)
       },
     })
 
